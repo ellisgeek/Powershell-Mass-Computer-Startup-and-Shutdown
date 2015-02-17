@@ -1,0 +1,15 @@
+# This is an example of the format for Computers.CSV
+
+# All Computers with the same POD are started and stopped at the same time
+
+# The Computer's hostname is needed to shutdown the PC
+
+# The MAC address is needed for sending WOL packets (Currently only works in the same subnet but that is being worked on)
+
+POD,NAME,MAC
+1,Pod1-1,E8:39:35:11:22:33
+1,Pod1-2,E8:39:35:11:22:33
+2,Pod2-1,E8:39:35:11:22:33
+2,Pod2-2,E8:39:35:11:22:33
+L202,Pod3-1,E8:39:35:11:22:33
+L202,Pod3-2,E8:39:35:11:22:33
