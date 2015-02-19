@@ -1,16 +1,44 @@
+# startstop.ps1
+# Batch startup and shutdown for windows based computer labs.
+
 #region About
-	# This script Boots and Shuts Down Specific Sets of computers
-	# Computers are stored in a CSV File stored in the same direcory as the script
+	# Configuration #
+	# At the moment the only configuration needed is to populate a file called
+	# `Computers.csv` with a list of the "PODS" (groups of computers) that you
+	# want to be able to start and stop. An example Computers.csv is included
+	# in this repository.
+
+	# Usage #
+	# The script expects `Computers.csv` to exist in the same folder as the
+	# script. 
 #endregion
 
 #region License
+	#The MIT License (MIT)
 	#
+	#Copyright (c) 2015 Elliott Saille
+	#
+	#Permission is hereby granted, free of charge, to any person obtaining a copy
+	#of this software and associated documentation files (the "Software"), to deal
+	#in the Software without restriction, including without limitation the rights
+	#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	#copies of the Software, and to permit persons to whom the Software is
+	#furnished to do so, subject to the following conditions:
+	#
+	#The above copyright notice and this permission notice shall be included in all
+	#copies or substantial portions of the Software.
+	#
+	#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	#SOFTWARE.
 #endregion
 
 #region TODO List
-	# * Add MIT License
-	# * Add about section
-	# * Put on GitHub
+	# TODO:
 	# * Add Menubar with File and Help Menus to facilitate loading different lists of computers
 #endregion
 
@@ -1366,13 +1394,17 @@ function Main {
 				}
 				$output.Text += $newline
 			}
-            $running = @(Get-Job | Where-Object { $_.State -eq 'Running' })
-            While($running.Count -gt 0){
-                $output.Text += " - Still waiting on $($running.Count) tasks to finish!"
+            # Wait for jobs to finish and alert people to the remaining number
+            While(@(Get-Job | Where-Object { $_.State -eq 'Running' }).Count -gt 0){
+                $running = @(Get-Job | Where-Object { $_.State -eq 'Running' }).Count
+                $output.Text += " - Still waiting on $running tasks to finish!"
                 [System.Collections.ArrayList]$lines = $output.Lines
                 $lines.Remove($lines[$lines.Count - 1])
                 $output.Lines = $lines
+                Sleep -m 250
             }
+            # Remove completed jobs
+            @(Get-Job | Where-Object { $_.State -eq 'Completed' }) | Remove-Job
 		}
 		$listPods.ClearSelected()
 		Write-Verbose("Clearing Checked PODS")
