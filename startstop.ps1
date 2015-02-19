@@ -1308,8 +1308,10 @@ function Main {
 	    # Import our CSV
 	    $computers = Import-CSV "$path\Computers.csv"
     } Else{
-        $output.Text = "Could not load Computers.csv!" + $newline +
-		"Does it exist in the same folder as this program?" + $newline
+        $output.AppendText(
+            "Could not load Computers.csv!" + $newline +
+		    "Does it exist in the same folder as this program?" + $newline
+        )
 		$script:ExitCode = 1
     }
 
@@ -1329,20 +1331,25 @@ function Main {
 		$output.Clear()
 		Write-Verbose("Clearing Output Textbox")
 		If (-not $listPods.CheckedItems.Count -gt 0) {
-			$output.Text += "Please select at least one POD from the box on the right!" + $newline
+			$output.AppendText(
+                "Please select at least one POD from the box on the right!" +
+                $newline
+            )
 		}
 		Else {
 			Write-Verbose "Pods to be executed on: $($listPods.CheckedItems)"
 			ForEach ($pod in $listPods.CheckedItems) {
-				$output.Text += "Starting Up Pod #" + $pod + $newline
+				$output.AppendText("Starting Up Pod #" + $pod + $newline)
 				ForEach ($computer in $computers) {
 					If ($computer.POD -eq $pod) {
 						# If there is a MAC address send WOL packet
 						If ($computer.MAC)
 						{
 							#Write a line saying what we are doing and to what
-							$output.Text += " * Sending Startup Command to Computer: \\" +
-							$computer.NAME + $newline
+							$output.AppendText(
+                                " * Sending Startup Command to Computer: \\" +
+                                $computer.NAME + $newline
+                            )
 
 							Write-Verbose("Sending WOL Packet to {0} with MAC {1} on POD {2}" -f $computer.NAME, $computer.MAC, $computer.POD)
 
@@ -1351,12 +1358,14 @@ function Main {
 						}
 						Else
 						{
-							$output.Text += " * No MAC Address for computer \\" +
-							$computer.NAME + $newline
+							$output.AppendText(
+                                " * No MAC Address for computer \\" +
+							    $computer.NAME + $newline
+                            )
 						}
 					}
 				}
-				$output.Text += $newline
+				$output.AppendText($newline)
 			}
 		}
 		$listPods.ClearSelected()
@@ -1373,38 +1382,40 @@ function Main {
         }
 
 		If (-not $listPods.CheckedItems.Count -gt 0) {
-			$output.Text += "Please select at least one POD from the box on the right!" + $newline
+			$output.AppendText("Please select at least one POD from the box on the right!" + $newline)
 		}
 		Else {
 			Write-Verbose "Pods to shutdown: $($listPods.CheckedItems)"
 			ForEach ($pod in $listPods.CheckedItems) {
-				$output.Text += "Shutting Down Pod #" + $pod + $newline
+				$output.AppendText("Shutting Down Pod #" + $pod + $newline)
 				ForEach ($computer in $computers) {
 					If ($computer.POD -eq $pod) {
                         #Write a line saying what we are doing and to what
-						$output.Text += " * Sending Shutdown Command to Computer: \\" +
-						$computer.NAME + $newline
+						$output.AppendText(" * Sending Shutdown Command to Computer: \\" + $computer.NAME + $newline)
 
 						Write-Verbose("Sending Shutdown Command to {0} with MAC {1} on POD {2}" -f $computer.NAME, $computer.MAC, $computer.POD)
 
 						# Shutdown the computer
-						#Stop-Computer -ComputerName $computer.NAME -Force #Command is blocking ans slows down script execution
                         Start-Job -ScriptBlock $shutdown -ArgumentList $computer.NAME -Name $computer.NAME
 					}
 				}
-				$output.Text += $newline
+				$output.AppendText($newline)
 			}
-            # Wait for jobs to finish and alert people to the remaining number
+            # Wait for jobs to finish and alert write remaining number to output
             While(@(Get-Job | Where-Object { $_.State -eq 'Running' }).Count -gt 0){
+                # Get Running Jobs
                 $running = @(Get-Job | Where-Object { $_.State -eq 'Running' }).Count
-                $output.Text += " - Still waiting on $running tasks to finish!"
-                [System.Collections.ArrayList]$lines = $output.Lines
-                $lines.Remove($lines[$lines.Count - 1])
-                $output.Lines = $lines
-                Sleep -m 250
+                $output.AppendText(" - Still waiting on $running tasks to finish!" + $newline)
+                # FIXME: Find a way to replace only the last line of the textbox that does not reset scroll
+                #[System.Collections.ArrayList]$lines = $output.Lines
+                #$lines.Remove($lines[$lines.Count - 1])
+                #$output.Lines = $lines
+                # Sleep for 1s to prevent spamming output
+                Sleep -m 5000
             }
             # Remove completed jobs
             @(Get-Job | Where-Object { $_.State -eq 'Completed' }) | Remove-Job
+            $output.AppendText(" - All Tasks Complete!")
 		}
 		$listPods.ClearSelected()
 		Write-Verbose("Clearing Checked PODS")
